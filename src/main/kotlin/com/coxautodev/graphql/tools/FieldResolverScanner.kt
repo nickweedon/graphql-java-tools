@@ -60,6 +60,10 @@ internal class FieldResolverScanner(val options: SchemaParserOptions) {
             return MethodFieldResolver(field, search, options, method.apply { isAccessible = true })
         }
 
+        if(java.util.Map::class.java.isAssignableFrom(search.type.unwrap())) {
+            return PropertyMapResolver(field, search, options, search.type.unwrap())
+        }
+
         if (scanProperties) {
             val property = findResolverProperty(field, search)
             if (property != null) {

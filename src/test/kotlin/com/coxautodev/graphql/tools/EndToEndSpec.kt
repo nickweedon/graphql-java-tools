@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture
 
 fun createSchema() = SchemaParser.newParser()
     .schemaString(schemaDefinition)
-    .resolvers(Query(), Mutation(), Subscription(), ItemResolver(), UnusedRootResolver(), UnusedResolver())
+    .resolvers(Query(), Mutation(), Subscription(), ItemResolver(), UnusedRootResolver(), UnusedResolver(), ComplexMapItemResolver(), NestedComplexMapItemResolver())
     .scalars(customScalarUUID, customScalarMap, customScalarId)
     .dictionary("OtherItem", OtherItemWithWrongName::class)
     .dictionary("ThirdItem", ThirdItem::class)
@@ -62,6 +62,12 @@ type Query {
     # Check it's possible to use field names that correspond to methods on the java.lang.Object class
     class: [Item!]
     hashCode: [Item!]
+
+    propertyHashMapItems: [PropertyHashMapItem!]
+    propertyMapMissingNamePropItems: [PropertyHashMapItem!]
+    propertySortedMapItems: [PropertySortedMapItem!]
+    propertyMapWithComplexItems: [PropertyMapWithComplexItem!]
+    propertyMapWithNestedComplexItems: [PropertyMapWithNestedComplexItem!]
 
     propertyField: String!
     dataFetcherResult: Item!
@@ -144,6 +150,38 @@ type ThirdItem {
     id: Int!
 }
 
+type PropertyHashMapItem {
+    name: String
+    age: Int!
+}
+
+type PropertySortedMapItem {
+    name: String!
+    age: Int!
+}
+
+type ComplexMapItem {
+    id: Int!
+}
+
+type UndiscoveredItem {
+    id: Int!
+}
+
+type NestedComplexMapItem {
+    item: UndiscoveredItem
+}
+
+type PropertyMapWithNestedComplexItem {
+    nested: NestedComplexMapItem!
+    age: Int!
+}
+
+type PropertyMapWithComplexItem {
+    nameId: ComplexMapItem!
+    age: Int!
+}
+
 union OtherUnion = Item | ThirdItem
 
 union NestedUnion = OtherUnion | OtherItem
@@ -167,6 +205,27 @@ val otherItems = mutableListOf(
 
 val thirdItems = mutableListOf(
         ThirdItem(100)
+)
+
+val propetyHashMapItems = mutableListOf(
+        hashMapOf("name" to "bob", "age" to 55)
+)
+
+val propertyMapMissingNamePropItems = mutableListOf(
+        hashMapOf<String, kotlin.Any>("age" to 55)
+)
+
+val propetySortedMapItems = mutableListOf(
+        sortedMapOf("name" to "Arthur", "age" to 76),
+        sortedMapOf("name" to "Jane", "age" to 28)
+)
+
+val propertyMapWithComplexItems = mutableListOf(
+        hashMapOf("nameId" to ComplexMapItem(150), "age" to 72)
+)
+
+val propertyMapWithNestedComplexItems = mutableListOf(
+        hashMapOf("nested" to NestedComplexMapItem(UndiscoveredItem(63)), "age" to 72)
 )
 
 class Query: GraphQLQueryResolver, ListListResolver<String>() {
@@ -200,6 +259,13 @@ class Query: GraphQLQueryResolver, ListListResolver<String>() {
 
     fun getFieldClass() = items
     fun getFieldHashCode() = items
+
+    fun propertyHashMapItems() = propetyHashMapItems
+    fun propertyMapMissingNamePropItems() = propertyMapMissingNamePropItems
+    fun propertySortedMapItems() = propetySortedMapItems
+    fun propertyMapWithComplexItems() = propertyMapWithComplexItems
+    fun propertyMapWithNestedComplexItems() = propertyMapWithNestedComplexItems
+
 
     private val propertyField = "test"
 
@@ -246,6 +312,20 @@ class ItemResolver : GraphQLResolver<Item> {
     fun batchedWithParamsTags(items: List<Item>, names: List<String>?): List<List<Tag>> = items.map{ it.tags.filter { names?.contains(it.name) ?: true } }
 }
 
+// This resolver allows a Map<String, Object> property map to contain the 
+// POJO class "ComplexMapItem" that maps to the schema type "ComplexMapItem" 
+class ComplexMapItemResolver : GraphQLTypeNameResolver<ComplexMapItem> {
+    override fun getTargetType(): String {
+        return "ComplexMapItem"
+    }
+}
+
+class NestedComplexMapItemResolver : GraphQLTypeNameResolver<NestedComplexMapItem> {
+    override fun getTargetType(): String {
+        return "NestedComplexMapItem"
+    }
+}
+
 interface ItemInterface {
     val name: String
     val type: Type
@@ -256,6 +336,9 @@ enum class Type { TYPE_1, TYPE_2 }
 data class Item(val id: Int, override val name: String, override val type: Type, override val uuid:UUID, val tags: List<Tag>) : ItemInterface
 data class OtherItemWithWrongName(val id: Int, override val name: String, override val type: Type, override val uuid:UUID) : ItemInterface
 data class ThirdItem(val id: Int)
+data class ComplexMapItem(val id: Int)
+data class UndiscoveredItem(val id: Int)
+data class NestedComplexMapItem(val item: UndiscoveredItem)
 data class Tag(val id: Int, val name: String)
 data class ItemSearchInput(val name: String)
 data class NewItemInput(val name: String, val type: Type)
