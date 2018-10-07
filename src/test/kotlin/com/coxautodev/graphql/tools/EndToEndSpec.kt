@@ -14,10 +14,13 @@ import java.util.concurrent.CompletableFuture
 
 fun createSchema() = SchemaParser.newParser()
     .schemaString(schemaDefinition)
-    .resolvers(Query(), Mutation(), Subscription(), ItemResolver(), UnusedRootResolver(), UnusedResolver(), ComplexMapItemResolver(), NestedComplexMapItemResolver())
+    //.resolvers(Query(), Mutation(), Subscription(), ItemResolver(), UnusedRootResolver(), UnusedResolver(), ComplexMapItemResolver(), NestedComplexMapItemResolver())
+     .resolvers(Query(), Mutation(), Subscription(), ItemResolver(), UnusedRootResolver(), UnusedResolver(), NestedComplexMapItemResolver())
     .scalars(customScalarUUID, customScalarMap, customScalarId)
     .dictionary("OtherItem", OtherItemWithWrongName::class)
     .dictionary("ThirdItem", ThirdItem::class)
+    .dictionary("ComplexMapItem", ComplexMapItem::class)
+    .dictionary("NestedComplexMapItem", NestedComplexMapItem::class)
     .build()
     .makeExecutableSchema()
 
@@ -314,11 +317,13 @@ class ItemResolver : GraphQLResolver<Item> {
 
 // This resolver allows a Map<String, Object> property map to contain the 
 // POJO class "ComplexMapItem" that maps to the schema type "ComplexMapItem" 
+/*
 class ComplexMapItemResolver : GraphQLTypeNameResolver<ComplexMapItem> {
     override fun getTargetType(): String {
         return "ComplexMapItem"
     }
 }
+*/
 
 class NestedComplexMapItemResolver : GraphQLTypeNameResolver<NestedComplexMapItem> {
     override fun getTargetType(): String {

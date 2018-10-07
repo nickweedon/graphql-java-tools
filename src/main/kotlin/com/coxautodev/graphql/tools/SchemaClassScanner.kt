@@ -222,13 +222,23 @@ internal class SchemaClassScanner(initialDictionary: BiMap<String, Class<*>>, al
      */
     private fun scanQueueItemForPotentialMatches(item: QueueItem) {
         val resolverInfoList = this.resolverInfos.filter { it.dataClassType == item.clazz }
-        val resolverInfo: ResolverInfo? = if (resolverInfoList.size > 1) {
-            MultiResolverInfo(resolverInfoList)
+        var resolverInfo: ResolverInfo? = null
+
+        if (resolverInfoList.size > 1) {
+            resolverInfo = MultiResolverInfo(resolverInfoList)
         } else {
             if(item.clazz.equals(Object::class.java)) {
-                typeResolversByTargetType[item.type.name]
+                //typeResolversByTargetType[item.type.name]
+                //initialDictionary[item.type.name]?.get()
+
+                val dictionaryType = initialDictionary[item.type.name]?.get()
+                if(dictionaryType != null) {
+                    resolverInfo = resolverInfosByDataClass[dictionaryType] ?: DataClassResolverInfo(dictionaryType);
+                }
+
+                //resolverInfosByDataClass[initialDictionary[item.type.name]?.get()] ?: DataClassResolverInfo(initialDictionary[item.type.name]?.get()!!)
             } else {
-                resolverInfosByDataClass[item.clazz] ?: DataClassResolverInfo(item.clazz)
+                resolverInfo = resolverInfosByDataClass[item.clazz] ?: DataClassResolverInfo(item.clazz)
             }
         }
         if(resolverInfo == null) {
